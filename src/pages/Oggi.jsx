@@ -202,8 +202,18 @@ export default function Oggi() {
         )}
       </div>
 
+      {/* Timer sticky — rimane visibile mentre si scrolla tra gli esercizi */}
+      {activeSession && (
+        <div
+          className="sticky z-20 px-4 py-3 bg-gray-950 border-b border-gray-800/50"
+          style={{ top: 'env(safe-area-inset-top, 0px)' }}
+        >
+          <Timer defaultDuration={settings.timerDuration} />
+        </div>
+      )}
+
       <div className="px-4 mt-4 space-y-3">
-        {/* Pulsante Inizia o Timer */}
+        {/* Pulsante Inizia */}
         {!activeSession && !editMode && (
           <button
             onClick={handleIniziaSessione}
@@ -214,7 +224,6 @@ export default function Oggi() {
           </button>
         )}
 
-        {activeSession && <Timer defaultDuration={settings.timerDuration} />}
 
         {/* Banner modalità modifica */}
         {editMode && (
