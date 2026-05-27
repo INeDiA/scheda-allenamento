@@ -137,8 +137,14 @@ export default function Oggi() {
     setModalEsercizio(null)
   }
 
-  function handlePickerSelect(esercizio) {
-    aggiungiEsercizio(schedaAttiva.id, giornoEffettivo, esercizio)
+  function handlePickerSelect({ esercizio, addToAll }) {
+    if (addToAll) {
+      schedaAttiva.sessioni.forEach((sessione) => {
+        aggiungiEsercizio(schedaAttiva.id, sessione.id, esercizio)
+      })
+    } else {
+      aggiungiEsercizio(schedaAttiva.id, giornoEffettivo, esercizio)
+    }
     setShowPicker(false)
   }
 

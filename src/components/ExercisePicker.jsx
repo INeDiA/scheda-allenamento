@@ -10,6 +10,7 @@ export function useEserciziCustom() {
 export default function ExercisePicker({ onSelect, onClose, onCreaPersonalizzato }) {
   const [query, setQuery] = useState('')
   const [gruppoFiltro, setGruppoFiltro] = useState('Tutti')
+  const [tutteLeSessioni, setTutteLeSessioni] = useState(false)
   const [eserciziCustom] = useEserciziCustom()
 
   const eserciziFiltrati = useMemo(() => {
@@ -39,7 +40,7 @@ export default function ExercisePicker({ onSelect, onClose, onCreaPersonalizzato
       isBodyweight: esercizio.isBodyweight || false,
       isTime: esercizio.isTime || false,
     }
-    onSelect(esercizioSessione)
+    onSelect({ esercizio: esercizioSessione, addToAll: tutteLeSessioni })
   }
 
   return (
@@ -133,8 +134,24 @@ export default function ExercisePicker({ onSelect, onClose, onCreaPersonalizzato
           )}
         </div>
 
+        {/* Toggle "aggiungi a tutte le sessioni" */}
+        <div className="border-t border-gray-800 mt-3 pt-3 flex-shrink-0">
+          <button
+            onClick={() => setTutteLeSessioni((v) => !v)}
+            className="w-full flex items-center justify-between px-1 py-1 rounded-xl active:scale-98 transition-all"
+          >
+            <div className="text-left">
+              <p className="text-sm font-medium text-white">Aggiungi a tutte le sessioni</p>
+              <p className="text-xs text-gray-500 mt-0.5">L'esercizio verrà inserito in ogni giorno della scheda</p>
+            </div>
+            <div className={`relative w-11 h-6 rounded-full flex-shrink-0 ml-4 transition-colors ${tutteLeSessioni ? 'bg-blue-600' : 'bg-gray-700'}`}>
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${tutteLeSessioni ? 'translate-x-5' : 'translate-x-0'}`} />
+            </div>
+          </button>
+        </div>
+
         {/* Pulsante crea personalizzato */}
-        <div className="pt-4 flex-shrink-0">
+        <div className="pt-3 flex-shrink-0">
           <button
             onClick={() => {
               onClose()
