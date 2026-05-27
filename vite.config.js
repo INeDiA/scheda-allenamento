@@ -40,6 +40,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: '/scheda-allenamento/index.html',
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
