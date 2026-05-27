@@ -124,7 +124,7 @@ export const GIORNI_DEFAULT = {
     nome: 'Giorno B',
     focus: 'Dorsali · Bicipiti',
     emoji: '🏋️',
-    colore: 'purple',
+    colore: 'orange',
     esercizi: [
       {
         id: 'lat_machine',
