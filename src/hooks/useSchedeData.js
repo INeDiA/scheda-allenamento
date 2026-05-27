@@ -5,6 +5,25 @@ function generaId() {
   return Date.now().toString() + Math.random().toString(36).slice(2)
 }
 
+// Rinomina sessioni default se hanno ancora i vecchi nomi "Giorno A/B/C"
+function migraV2NomiSessioni(schede) {
+  if (localStorage.getItem('sm_migration_v2_nomi')) return schede
+  const mappa = { 'Giorno A': 'Push', 'Giorno B': 'Pull', 'Giorno C': 'Legs' }
+  let modified = false
+  const aggiornate = schede.map((scheda) => ({
+    ...scheda,
+    sessioni: scheda.sessioni.map((sess) => {
+      if (mappa[sess.nome]) {
+        modified = true
+        return { ...sess, nome: mappa[sess.nome] }
+      }
+      return sess
+    }),
+  }))
+  localStorage.setItem('sm_migration_v2_nomi', '1')
+  return modified ? aggiornate : schede
+}
+
 // Migra i dati dal vecchio formato sm_workout al nuovo formato multi-scheda
 function migraVecchiDati() {
   try {
@@ -63,6 +82,15 @@ export function useSchedeData() {
     } catch {
       // ignore
     }
+  }
+
+  // Migrazione nomi sessioni (Giorno A/B/C → Push/Pull/Legs)
+  const schedeDopoMigrazione = migraV2NomiSessioni(schedeEffettive)
+  if (schedeDopoMigrazione !== schedeEffettive) {
+    try {
+      localStorage.setItem('sm_schede', JSON.stringify(schedeDopoMigrazione))
+    } catch { /* ignore */ }
+    schedeEffettive = schedeDopoMigrazione
   }
 
   const schedaAttiva =
