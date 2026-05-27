@@ -44,7 +44,7 @@ export const GIORNI_DEFAULT = {
   A: {
     id: 'A',
     nome: 'Giorno A',
-    focus: 'Petto · Tricipiti · Spalle',
+    focus: 'Petto · Tricipiti',
     emoji: '💪',
     colore: 'blue',
     esercizi: [
@@ -73,22 +73,6 @@ export const GIORNI_DEFAULT = {
         gruppo: 'Petto',
       },
       {
-        id: 'shoulder_press',
-        nome: 'Shoulder Press Macchina',
-        serie: 4,
-        reps: '8-10',
-        note: 'Contrai le scapole prima di spingere. Evita di iperestendere la schiena.',
-        gruppo: 'Spalle',
-      },
-      {
-        id: 'alzate_laterali',
-        nome: 'Alzate Laterali',
-        serie: 3,
-        reps: '12-15',
-        note: 'Pesi leggeri, pollici leggermente verso il basso. Niente slancio del busto.',
-        gruppo: 'Spalle',
-      },
-      {
         id: 'pushdown',
         nome: 'Push-down Cavi',
         serie: 3,
@@ -102,6 +86,14 @@ export const GIORNI_DEFAULT = {
         serie: 3,
         reps: '10-12',
         note: 'Scendi fino a 90°. Movimento controllato sia in salita che in discesa.',
+        gruppo: 'Tricipiti',
+      },
+      {
+        id: 'french_press',
+        nome: 'French Press',
+        serie: 3,
+        reps: '10-12',
+        note: 'Gomiti fermi, abbassa il bilanciere verso la fronte. Niente slancio.',
         gruppo: 'Tricipiti',
       },
       {
@@ -130,7 +122,7 @@ export const GIORNI_DEFAULT = {
   B: {
     id: 'B',
     nome: 'Giorno B',
-    focus: 'Schiena · Bicipiti',
+    focus: 'Dorsali · Bicipiti',
     emoji: '🏋️',
     colore: 'purple',
     esercizi: [
@@ -159,14 +151,6 @@ export const GIORNI_DEFAULT = {
         gruppo: 'Schiena',
       },
       {
-        id: 'face_pull',
-        nome: 'Face Pull',
-        serie: 3,
-        reps: '15-20',
-        note: 'Cavo alto, tira verso le orecchie con i gomiti in alto. Ottimo per le spalle.',
-        gruppo: 'Schiena',
-      },
-      {
         id: 'curl_ez',
         nome: 'Curl EZ',
         serie: 3,
@@ -185,8 +169,8 @@ export const GIORNI_DEFAULT = {
       {
         id: 'curl_cavo',
         nome: 'Curl Cavo',
-        serie: 2,
-        reps: '15',
+        serie: 3,
+        reps: '12-15',
         note: 'Tensione costante per tutto il ROM. Eseguire lentamente.',
         gruppo: 'Bicipiti',
       },
@@ -216,7 +200,7 @@ export const GIORNI_DEFAULT = {
   C: {
     id: 'C',
     nome: 'Giorno C',
-    focus: 'Gambe · Core',
+    focus: 'Gambe · Spalle',
     emoji: '🦵',
     colore: 'green',
     esercizi: [
@@ -253,12 +237,20 @@ export const GIORNI_DEFAULT = {
         gruppo: 'Femorali',
       },
       {
-        id: 'leg_extension',
-        nome: 'Leg Extension',
+        id: 'shoulder_press',
+        nome: 'Shoulder Press Macchina',
+        serie: 4,
+        reps: '8-10',
+        note: 'Contrai le scapole prima di spingere. Evita di iperestendere la schiena.',
+        gruppo: 'Spalle',
+      },
+      {
+        id: 'alzate_laterali',
+        nome: 'Alzate Laterali',
         serie: 3,
         reps: '12-15',
-        note: 'Estendi completamente, mantieni 1 secondo in cima.',
-        gruppo: 'Quadricipiti',
+        note: 'Pesi leggeri, pollici leggermente verso il basso. Niente slancio del busto.',
+        gruppo: 'Spalle',
       },
       {
         id: 'plank',
