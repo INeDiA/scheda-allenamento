@@ -222,21 +222,19 @@ export default function Storico() {
         {/* Grafici progressione pesi */}
         {schedaAttiva?.sessioni?.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-white">Progressione pesi</h2>
-              <div className="flex bg-gray-900 border border-gray-800 rounded-xl p-1 gap-1 flex-wrap max-w-[60%] justify-end">
-                {schedaAttiva.sessioni.map((sess) => (
-                  <button
-                    key={sess.id}
-                    onClick={() => setGiornoGrafico(sess.id)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      giornoGraficoEffettivo === sess.id ? 'bg-gray-700 text-white' : 'text-gray-400'
-                    }`}
-                  >
-                    {sess.emoji} {sess.nome}
-                  </button>
-                ))}
-              </div>
+            <h2 className="text-sm font-semibold text-white mb-2">Progressione pesi</h2>
+            <div className="flex bg-gray-900 border border-gray-800 rounded-xl p-1 gap-1 overflow-x-auto no-scrollbar mb-3">
+              {schedaAttiva.sessioni.map((sess) => (
+                <button
+                  key={sess.id}
+                  onClick={() => setGiornoGrafico(sess.id)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    giornoGraficoEffettivo === sess.id ? 'bg-gray-700 text-white' : 'text-gray-400'
+                  }`}
+                >
+                  {sess.emoji} {sess.nome}
+                </button>
+              ))}
             </div>
 
             <div className="space-y-3">
