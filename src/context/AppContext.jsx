@@ -78,12 +78,30 @@ export function AppProvider({ children }) {
   }, [sessioniCompletate])
 
   function iniziaSessione(dayId) {
+    // Pre-popola i pesi con l'ultimo valore registrato per ogni esercizio
+    const esercizi = workoutData[dayId]?.esercizi || []
+    const sessioni = [...sessioniCompletate].reverse() // più recenti prima
+    const exercises = {}
+
+    for (const esercizio of esercizi) {
+      if (esercizio.isBodyweight) continue
+      const ultima = sessioni.find(
+        (s) => s.exercises[esercizio.id]?.sets?.some((set) => set.weight)
+      )
+      if (ultima) {
+        const ultimiSet = ultima.exercises[esercizio.id].sets
+        exercises[esercizio.id] = {
+          sets: ultimiSet.map((set) => ({ weight: set.weight, done: false })),
+        }
+      }
+    }
+
     const nuova = {
       id: Date.now().toString(),
       date: oggi,
       dayId,
       completed: false,
-      exercises: {},
+      exercises,
       nutrition: { pre: false, integratori: false, post: false, note: '' },
     }
     setActiveSession(nuova)
