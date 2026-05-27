@@ -232,54 +232,72 @@ export default function Oggi() {
         {/* Selettore sessione — visibile senza sessione attiva */}
         {!activeSession && (
           <div className="mt-4">
-            <div className="flex gap-2 flex-wrap">
-              {ordineSessioni.map((id) => {
-                const sess = workoutData[id]
-                if (!sess) return null
-                const sessColori = (sess.colore && COLORI_SESSIONE[sess.colore]) || COLORI_SESSIONE.blue
-                const attivo = id === giornoEffettivo
-                return (
-                  <button
-                    key={id}
-                    onClick={() => editMode ? (setSessioneModaleTarget(sess), setShowSessionModal(true)) : togglePill(id)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-all active:scale-95 ${
-                      attivo
-                        ? sessColori.pill + ' border-transparent shadow-md'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
-                    }`}
-                  >
-                    {sess.emoji && <span>{sess.emoji}</span>}
-                    <span>{sess.nome}</span>
-                    {/* Pulsante elimina sessione in edit mode */}
-                    {editMode && (schedaAttiva?.sessioni?.length || 0) > 1 && (
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleEliminaSessione(id)
-                        }}
-                        className={`ml-1 w-4 h-4 rounded-full flex items-center justify-center text-xs transition-colors ${
-                          confermaEliminaSessione === id
-                            ? 'bg-red-600 text-white'
-                            : 'bg-black/30 text-white/70 hover:bg-red-600'
+            {(() => {
+              const n = ordineSessioni.length
+              const gridCols =
+                n === 1 ? 'grid-cols-1' :
+                n === 2 ? 'grid-cols-2' :
+                n === 3 ? 'grid-cols-3' :
+                n === 4 ? 'grid-cols-2' :
+                          'grid-cols-6'       // 5 giorni
+
+              return (
+                <div className={`grid gap-2 ${gridCols}`}>
+                  {ordineSessioni.map((id, idx) => {
+                    const sess = workoutData[id]
+                    if (!sess) return null
+                    const sessColori = (sess.colore && COLORI_SESSIONE[sess.colore]) || COLORI_SESSIONE.blue
+                    const attivo = id === giornoEffettivo
+
+                    // Per 5 giorni: tutti col-span-2; il 4° parte dalla colonna 2 per centrare
+                    const spanClass = n === 5
+                      ? idx === 3 ? 'col-span-2 col-start-2' : 'col-span-2'
+                      : ''
+
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => editMode ? (setSessioneModaleTarget(sess), setShowSessionModal(true)) : togglePill(id)}
+                        className={`${spanClass} flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-all active:scale-95 ${
+                          attivo
+                            ? sessColori.pill + ' border-transparent shadow-md'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
                         }`}
                       >
-                        ×
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
+                        {sess.emoji && <span>{sess.emoji}</span>}
+                        <span>{sess.nome}</span>
+                        {/* Pulsante elimina sessione in edit mode */}
+                        {editMode && (schedaAttiva?.sessioni?.length || 0) > 1 && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEliminaSessione(id)
+                            }}
+                            className={`ml-1 w-4 h-4 rounded-full flex items-center justify-center text-xs transition-colors ${
+                              confermaEliminaSessione === id
+                                ? 'bg-red-600 text-white'
+                                : 'bg-black/30 text-white/70 hover:bg-red-600'
+                            }`}
+                          >
+                            ×
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            })()}
 
-              {/* Pulsante aggiungi sessione in edit mode */}
-              {editMode && (
-                <button
-                  onClick={() => { setSessioneModaleTarget(null); setShowSessionModal(true) }}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm border border-dashed border-gray-600 text-gray-500 hover:border-blue-500 hover:text-blue-400 transition-colors"
-                >
-                  <Plus size={14} />
-                </button>
-              )}
-            </div>
+            {/* Pulsante aggiungi sessione in edit mode */}
+            {editMode && (
+              <button
+                onClick={() => { setSessioneModaleTarget(null); setShowSessionModal(true) }}
+                className="mt-2 flex items-center gap-1 px-3 py-2 rounded-xl text-sm border border-dashed border-gray-600 text-gray-500 hover:border-blue-500 hover:text-blue-400 transition-colors"
+              >
+                <Plus size={14} />
+              </button>
+            )}
 
             {/* Indica override */}
             {!editMode && giornoOverride && giornoOverride !== giornoOggi && (
