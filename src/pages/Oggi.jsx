@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Play, CheckCircle, Award, AlertTriangle, Pencil, Trash2, Plus, RotateCcw, Settings, X, Layers2 } from 'lucide-react'
+import { backupNecessario } from '../utils/backup'
 import { useApp } from '../context/AppContext'
 import ExerciseCard from '../components/ExerciseCard'
 import Timer from '../components/Timer'
@@ -199,10 +200,13 @@ export default function Oggi() {
             {!activeSession && (
               <button
                 onClick={() => setShowSettings(true)}
-                className="p-2 bg-gray-800 text-gray-400 hover:bg-gray-700 rounded-xl transition-colors"
+                className="relative p-2 bg-gray-800 text-gray-400 hover:bg-gray-700 rounded-xl transition-colors"
                 title="Impostazioni"
               >
                 <Settings size={15} />
+                {backupNecessario() && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                )}
               </button>
             )}
             <button

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
-import { X, ChevronRight, AlertTriangle, Download, Upload, Share2 } from 'lucide-react'
+import { X, ChevronRight, AlertTriangle, Upload, Share2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { backupNecessario } from '../utils/backup'
 
 const DURATE_TIMER = [60, 90, 120, 150, 180]
 const CHIAVI_BACKUP = ['sm_sessions', 'sm_schede', 'sm_scheda_attiva_id', 'sm_esercizi_custom', 'sm_settings']
@@ -110,6 +111,24 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
         {/* Contenuto scrollabile */}
         <div className="overflow-y-auto flex-1 px-5 pb-10">
           <div className="space-y-5">
+
+            {/* Banner backup */}
+            {backupNecessario() && (
+              <button
+                onClick={esportaDati}
+                className="w-full flex items-start gap-3 bg-amber-950 border border-amber-800 rounded-2xl px-4 py-3 text-left active:scale-98 transition-all"
+              >
+                <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 mt-1.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-200">Fai un backup dei tuoi dati</p>
+                  <p className="text-xs text-amber-400 mt-0.5">
+                    {localStorage.getItem('sm_ultimo_backup')
+                      ? 'L\'ultimo backup risale a più di un mese fa. Tocca per esportare ora.'
+                      : 'Non hai ancora salvato nessun backup. Tocca per esportare ora.'}
+                  </p>
+                </div>
+              </button>
+            )}
 
             {/* Scheda attiva */}
             <button
