@@ -123,6 +123,12 @@ export function AppProvider({ children }) {
     setActiveSession(null)
   }
 
+  function modificaSessionePassata(sessionId, exercises) {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, exercises } : s))
+    )
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -159,6 +165,7 @@ export function AppProvider({ children }) {
         aggiornaNutrizione,
         completaSessione,
         abbandonaSessione,
+        modificaSessionePassata,
       }}
     >
       {children}

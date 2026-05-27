@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Flame, Calendar, TrendingUp } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import ProgressChart from '../components/ProgressChart'
+import SessionePassataModal from '../components/SessionePassataModal'
 import { COLORI_SESSIONE } from '../data/workout'
 
 // Data locale in formato YYYY-MM-DD (evita sfasamenti UTC)
@@ -56,6 +57,7 @@ export default function Storico() {
   // Sessione iniziale per il grafico: prima sessione della scheda attiva
   const primaSessioneId = schedaAttiva?.sessioni?.[0]?.id || null
   const [giornoGrafico, setGiornoGrafico] = useState(primaSessioneId)
+  const [sessioneSelezionata, setSessioneSelezionata] = useState(null)
 
   const oggiStr = toLocalDateStr(new Date())
   const dateCompletate = new Map(sessioniCompletate.map((s) => [s.date, s]))
@@ -181,12 +183,14 @@ export default function Storico() {
                         ? (sessionColorMap[sessione.dayId] || 'bg-blue-600')
                         : null
 
+                      const El = sessione ? 'button' : 'div'
                       return (
-                        <div
+                        <El
                           key={data}
-                          className={`aspect-square rounded-lg flex items-center justify-center ${
+                          onClick={sessione ? () => setSessioneSelezionata(sessione) : undefined}
+                          className={`aspect-square rounded-lg flex items-center justify-center transition-all ${
                             dotColor
-                              ? dotColor
+                              ? dotColor + ' active:scale-90 cursor-pointer'
                               : isFuturo
                               ? 'bg-transparent'
                               : 'bg-gray-800/60'
@@ -205,7 +209,7 @@ export default function Storico() {
                           >
                             {giorno}
                           </span>
-                        </div>
+                        </El>
                       )
                     })}
                   </div>
@@ -250,6 +254,14 @@ export default function Storico() {
           </div>
         )}
       </div>
+
+      {/* Dettaglio allenamento passato */}
+      {sessioneSelezionata && (
+        <SessionePassataModal
+          sessione={sessioneSelezionata}
+          onClose={() => setSessioneSelezionata(null)}
+        />
+      )}
     </div>
   )
 }

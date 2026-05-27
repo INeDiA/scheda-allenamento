@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Info } from 'lucide-react'
 
-export default function ExerciseCard({ esercizio, datiSerie = [], onAggiornaSerie }) {
-  const [expanded, setExpanded] = useState(false)
+export default function ExerciseCard({ esercizio, datiSerie = [], onAggiornaSerie, defaultExpanded = false }) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const { nome, serie, reps, note, gruppo, isBodyweight, isTime } = esercizio
 
   // Normalizza le serie con i dati salvati
