@@ -112,24 +112,6 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
         <div className="overflow-y-auto flex-1 px-5 pb-10">
           <div className="space-y-5">
 
-            {/* Banner backup */}
-            {backupNecessario() && (
-              <button
-                onClick={esportaDati}
-                className="w-full flex items-start gap-3 bg-amber-950 border border-amber-800 rounded-2xl px-4 py-3 text-left active:scale-98 transition-all"
-              >
-                <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 mt-1.5" />
-                <div>
-                  <p className="text-sm font-semibold text-amber-200">Fai un backup dei tuoi dati</p>
-                  <p className="text-xs text-amber-400 mt-0.5">
-                    {localStorage.getItem('sm_ultimo_backup')
-                      ? 'L\'ultimo backup risale a più di un mese fa. Tocca per esportare ora.'
-                      : 'Non hai ancora salvato nessun backup. Tocca per esportare ora.'}
-                  </p>
-                </div>
-              </button>
-            )}
-
             {/* Scheda attiva */}
             <button
               onClick={() => { onClose(); onGestisciSchede?.() }}
@@ -192,6 +174,23 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
               )}
               {!ultimoBackupStr && (
                 <p className="text-xs text-gray-600 mb-3">Nessun backup effettuato su questo dispositivo.</p>
+              )}
+
+              {backupNecessario() && (
+                <button
+                  onClick={esportaDati}
+                  className="w-full flex items-start gap-3 bg-amber-950 border border-amber-800 rounded-2xl px-4 py-3 text-left active:scale-98 transition-all mb-3"
+                >
+                  <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 mt-1.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-200">Fai un backup dei tuoi dati</p>
+                    <p className="text-xs text-amber-400 mt-0.5">
+                      {localStorage.getItem('sm_ultimo_backup')
+                        ? "L'ultimo backup risale a più di un mese fa. Tocca per esportare ora."
+                        : 'Non hai ancora salvato nessun backup. Tocca per esportare ora.'}
+                    </p>
+                  </div>
+                </button>
               )}
 
               <div className="flex gap-2">
