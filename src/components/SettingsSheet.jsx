@@ -1,22 +1,91 @@
-import { useState } from 'react'
-import { X, ChevronRight, AlertTriangle } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { X, ChevronRight, AlertTriangle, Download, Upload, Share2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const DURATE_TIMER = [60, 90, 120, 150, 180]
+const CHIAVI_BACKUP = ['sm_sessions', 'sm_schede', 'sm_scheda_attiva_id', 'sm_esercizi_custom', 'sm_settings']
 
 export default function SettingsSheet({ settings, onUpdateSettings, onClose, onGestisciSchede }) {
   const { schedaAttiva } = useApp()
-  const [passoReset, setPassoReset] = useState(0) // 0 normale · 1 primo avviso · 2 conferma finale
+  const [passoReset, setPassoReset] = useState(0)
+  const [erroreImport, setErroreImport] = useState(null)
+  const inputFileRef = useRef(null)
+
+  const ultimoBackup = localStorage.getItem('sm_ultimo_backup')
+  const ultimoBackupStr = ultimoBackup
+    ? new Date(ultimoBackup).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null
 
   function set(campo, valore) {
     onUpdateSettings({ ...settings, [campo]: valore })
   }
 
-  function handleReset() {
-    if (passoReset < 2) {
-      setPassoReset((p) => p + 1)
-      return
+  // ── Export ──────────────────────────────────────────────────────────
+  async function esportaDati() {
+    const dati = { _version: 1, _exportDate: new Date().toISOString() }
+    for (const key of CHIAVI_BACKUP) {
+      const val = localStorage.getItem(key)
+      if (val !== null) dati[key] = JSON.parse(val)
     }
+
+    const json = JSON.stringify(dati, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const fileName = `allenamento-backup-${new Date().toISOString().slice(0, 10)}.json`
+
+    // Web Share API (iOS / Android)
+    if (navigator.canShare) {
+      const file = new File([blob], fileName, { type: 'application/json' })
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Backup allenamento' })
+          localStorage.setItem('sm_ultimo_backup', new Date().toISOString())
+          return
+        } catch {
+          // utente ha annullato — non fare nulla
+          return
+        }
+      }
+    }
+
+    // Fallback download
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    URL.revokeObjectURL(url)
+    localStorage.setItem('sm_ultimo_backup', new Date().toISOString())
+  }
+
+  // ── Import ──────────────────────────────────────────────────────────
+  function handleFileImport(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setErroreImport(null)
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const dati = JSON.parse(ev.target.result)
+        if (!dati._version) throw new Error('formato non valido')
+        for (const key of CHIAVI_BACKUP) {
+          if (dati[key] !== undefined) {
+            localStorage.setItem(key, JSON.stringify(dati[key]))
+          }
+        }
+        window.location.reload()
+      } catch {
+        setErroreImport('File non riconosciuto. Assicurati di usare un backup generato da questa app.')
+      }
+    }
+    reader.readAsText(file)
+    // reset input così si può reimportare lo stesso file
+    e.target.value = ''
+  }
+
+  // ── Reset ────────────────────────────────────────────────────────────
+  function handleReset() {
+    if (passoReset < 2) { setPassoReset((p) => p + 1); return }
     localStorage.clear()
     window.location.reload()
   }
@@ -26,9 +95,9 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
       className="fixed inset-0 z-[60] bg-black/70 flex items-end"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full bg-gray-900 border-t border-gray-800 rounded-t-3xl p-5 pb-10">
-        {/* Intestazione */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="w-full bg-gray-900 border-t border-gray-800 rounded-t-3xl max-h-[92vh] flex flex-col">
+        {/* Intestazione fissa */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 flex-shrink-0">
           <h2 className="text-lg font-bold text-white">Impostazioni</h2>
           <button
             onClick={onClose}
@@ -38,71 +107,110 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
           </button>
         </div>
 
-        <div className="space-y-5">
-          {/* Scheda attiva — link a gestione schede */}
-          <button
-            onClick={() => {
-              onClose()
-              onGestisciSchede?.()
-            }}
-            className="w-full flex items-center justify-between bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-2xl px-4 py-3.5 transition-colors"
-          >
-            <div className="text-left">
-              <p className="text-sm font-semibold text-white">Scheda attiva</p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {schedaAttiva?.nome || 'Nessuna scheda'}
-              </p>
-            </div>
-            <ChevronRight size={18} className="text-gray-500" />
-          </button>
+        {/* Contenuto scrollabile */}
+        <div className="overflow-y-auto flex-1 px-5 pb-10">
+          <div className="space-y-5">
 
-          {/* Giorni per settimana */}
-          <div>
-            <p className="text-sm font-semibold text-white mb-1">Giorni di allenamento</p>
-            <p className="text-xs text-gray-400 mb-3">
-              Quante sessioni ruotano nella settimana.
-            </p>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => set('giorniSettimana', n)}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
-                    (settings.giorniSettimana ?? 3) === n
-                      ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
+            {/* Scheda attiva */}
+            <button
+              onClick={() => { onClose(); onGestisciSchede?.() }}
+              className="w-full flex items-center justify-between bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-2xl px-4 py-3.5 transition-colors"
+            >
+              <div className="text-left">
+                <p className="text-sm font-semibold text-white">Scheda attiva</p>
+                <p className="text-xs text-gray-400 mt-0.5">{schedaAttiva?.nome || 'Nessuna scheda'}</p>
+              </div>
+              <ChevronRight size={18} className="text-gray-500" />
+            </button>
 
-          {/* Timer recupero */}
-          <div>
-            <p className="text-sm font-semibold text-white mb-1">Durata recupero default</p>
-            <p className="text-xs text-gray-400 mb-3">
-              Durata del timer che parte dopo ogni serie.
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              {DURATE_TIMER.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => set('timerDuration', d)}
-                  className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
-                    settings.timerDuration === d
-                      ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
-                  }`}
-                >
-                  {d}s
-                </button>
-              ))}
+            {/* Giorni per settimana */}
+            <div>
+              <p className="text-sm font-semibold text-white mb-1">Giorni di allenamento</p>
+              <p className="text-xs text-gray-400 mb-3">Quante sessioni ruotano nella settimana.</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => set('giorniSettimana', n)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                      (settings.giorniSettimana ?? 3) === n
+                        ? 'bg-blue-600 border-blue-500 text-white'
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          {/* Reset database */}
-          <div className="pt-2">
+
+            {/* Timer recupero */}
+            <div>
+              <p className="text-sm font-semibold text-white mb-1">Durata recupero default</p>
+              <p className="text-xs text-gray-400 mb-3">Durata del timer che parte dopo ogni serie.</p>
+              <div className="flex gap-2 flex-wrap">
+                {DURATE_TIMER.map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => set('timerDuration', d)}
+                    className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                      settings.timerDuration === d
+                        ? 'bg-blue-600 border-blue-500 text-white'
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    {d}s
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Backup ───────────────────────────────────────────── */}
+            <div className="border-t border-gray-800 pt-5">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Backup dati</p>
+              {ultimoBackupStr && (
+                <p className="text-xs text-gray-600 mb-3">Ultimo backup: {ultimoBackupStr}</p>
+              )}
+              {!ultimoBackupStr && (
+                <p className="text-xs text-gray-600 mb-3">Nessun backup effettuato su questo dispositivo.</p>
+              )}
+
+              <div className="flex gap-2">
+                {/* Esporta / Condividi */}
+                <button
+                  onClick={esportaDati}
+                  className="flex-1 flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-2xl py-3 text-sm font-medium text-white transition-colors active:scale-98"
+                >
+                  <Share2 size={15} />
+                  Esporta
+                </button>
+
+                {/* Importa */}
+                <button
+                  onClick={() => inputFileRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-2xl py-3 text-sm font-medium text-white transition-colors active:scale-98"
+                >
+                  <Upload size={15} />
+                  Importa
+                </button>
+                <input
+                  ref={inputFileRef}
+                  type="file"
+                  accept=".json,application/json"
+                  className="hidden"
+                  onChange={handleFileImport}
+                />
+              </div>
+
+              {erroreImport && (
+                <div className="flex items-start gap-2 bg-red-950 border border-red-800 rounded-xl p-3 mt-2">
+                  <AlertTriangle size={13} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-300">{erroreImport}</p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Zona pericolosa ──────────────────────────────────── */}
             <div className="border-t border-gray-800 pt-5">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Zona pericolosa</p>
 
@@ -141,6 +249,7 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
                 </button>
               )}
             </div>
+
           </div>
         </div>
       </div>
