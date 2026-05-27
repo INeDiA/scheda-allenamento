@@ -17,7 +17,7 @@ function dataOggi() {
 export function AppProvider({ children }) {
   const [sessions, setSessions] = useLocalStorage('sm_sessions', [])
   const [activeSession, setActiveSession] = useLocalStorage('sm_active_session', null)
-  const [settings, setSettings] = useLocalStorage('sm_settings', { timerDuration: 90 })
+  const [settings, setSettings] = useLocalStorage('sm_settings', { timerDuration: 90, giorniSettimana: 3 })
 
   const schedeData = useSchedeData()
   const {
@@ -41,8 +41,8 @@ export function AppProvider({ children }) {
   const oggi = dataOggi()
 
   const ordineSessioni = useMemo(
-    () => (schedaAttiva?.sessioni || []).map((s) => s.id),
-    [schedaAttiva]
+    () => (schedaAttiva?.sessioni || []).slice(0, settings.giorniSettimana ?? 3).map((s) => s.id),
+    [schedaAttiva, settings.giorniSettimana]
   )
 
   const sessioniCompletate = useMemo(

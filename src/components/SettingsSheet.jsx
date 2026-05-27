@@ -45,6 +45,29 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
             <ChevronRight size={18} className="text-gray-500" />
           </button>
 
+          {/* Giorni per settimana */}
+          <div>
+            <p className="text-sm font-semibold text-white mb-1">Giorni di allenamento</p>
+            <p className="text-xs text-gray-400 mb-3">
+              Quante sessioni ruotano nella settimana.
+            </p>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => set('giorniSettimana', n)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                    (settings.giorniSettimana ?? 3) === n
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Timer recupero */}
           <div>
             <p className="text-sm font-semibold text-white mb-1">Durata recupero default</p>
