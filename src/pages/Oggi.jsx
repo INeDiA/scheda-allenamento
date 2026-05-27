@@ -5,6 +5,7 @@ import ExerciseCard from '../components/ExerciseCard'
 import Timer from '../components/Timer'
 import EditExerciseModal from '../components/EditExerciseModal'
 import SettingsSheet from '../components/SettingsSheet'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { ORDINE_GIORNI } from '../data/workout'
 
 const COLORI = {
@@ -50,6 +51,9 @@ export default function Oggi() {
   const [confermaIncompleto, setConfermaIncompleto] = useState(false)
   const [confermaReset, setConfermaReset] = useState(false)
   const [modalEsercizio, setModalEsercizio] = useState(null)
+
+  // Schermo sempre acceso durante la sessione
+  useWakeLock(!!activeSession)
 
   // Giorno effettivo: override manuale ha priorità su quello calcolato
   const giornoEffettivo = giornoOverride ?? giornoOggi
