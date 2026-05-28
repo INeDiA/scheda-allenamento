@@ -200,7 +200,7 @@ export default function Storico() {
                               ? () => setGiornoAggiunta({ giorno, data })
                               : undefined
                           }
-                          className={`aspect-square rounded-lg flex items-center justify-center transition-all relative ${
+                          className={`aspect-square rounded-lg flex items-center justify-center transition-all ${
                             dotColor
                               ? dotColor + ' active:scale-90 cursor-pointer'
                               : isFuturo
@@ -223,9 +223,6 @@ export default function Storico() {
                           >
                             {giorno}
                           </span>
-                          {puoiAggiungere && (
-                            <span className="absolute top-0.5 right-1 text-[8px] leading-none text-gray-600">+</span>
-                          )}
                         </El>
                       )
                     })}
