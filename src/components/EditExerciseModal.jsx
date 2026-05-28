@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X, Layers2 } from 'lucide-react'
 
 const GRUPPI_MUSCOLARI = [
   'Petto',
@@ -23,6 +23,7 @@ const FORM_VUOTO = {
   note: '',
   isBodyweight: false,
   isTime: false,
+  isShared: false,
 }
 
 export default function EditExerciseModal({ esercizio, onSave, onClose }) {
@@ -39,6 +40,7 @@ export default function EditExerciseModal({ esercizio, onSave, onClose }) {
         note: esercizio.note || '',
         isBodyweight: esercizio.isBodyweight || false,
         isTime: esercizio.isTime || false,
+        isShared: esercizio.isShared || false,
       })
     } else {
       setForm(FORM_VUOTO)
@@ -162,6 +164,20 @@ export default function EditExerciseModal({ esercizio, onSave, onClose }) {
               A tempo
             </button>
           </div>
+
+          {/* Toggle esercizio ricorrente */}
+          <button
+            type="button"
+            onClick={() => set('isShared', !form.isShared)}
+            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-xl text-xs font-medium border transition-colors ${
+              form.isShared
+                ? 'bg-blue-950 border-blue-700 text-blue-300'
+                : 'bg-gray-800 border-gray-700 text-gray-400'
+            }`}
+          >
+            <Layers2 size={13} />
+            Comune a tutte le sessioni
+          </button>
 
           {/* Note tecniche */}
           <div>
