@@ -169,7 +169,7 @@ export default function EditExerciseModal({ esercizio, onSave, onClose }) {
           <button
             type="button"
             onClick={() => set('isShared', !form.isShared)}
-            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-xl text-xs font-medium border transition-colors ${
+            className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-medium border transition-colors ${
               form.isShared
                 ? 'bg-blue-950 border-blue-700 text-blue-300'
                 : 'bg-gray-800 border-gray-700 text-gray-400'
