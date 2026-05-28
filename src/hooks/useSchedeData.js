@@ -6,28 +6,9 @@ function generaId() {
   return Date.now().toString() + Math.random().toString(36).slice(2)
 }
 
-// Corregge le emoji di Push (💪→🏋️) e Pull (🏋️→💪)
-function migraV3Emoji(schede) {
-  if (localStorage.getItem('sm_migration_v3_emoji')) return schede
-  const mappa = { Push: '🏋️', Pull: '💪' }
-  let modified = false
-  const aggiornate = schede.map((scheda) => ({
-    ...scheda,
-    sessioni: scheda.sessioni.map((sess) => {
-      if (mappa[sess.nome] && sess.emoji !== mappa[sess.nome]) {
-        modified = true
-        return { ...sess, emoji: mappa[sess.nome] }
-      }
-      return sess
-    }),
-  }))
-  localStorage.setItem('sm_migration_v3_emoji', '1')
-  return modified ? aggiornate : schede
-}
-
 // Rinomina sessioni default se hanno ancora i vecchi nomi "Giorno A/B/C"
+// Idempotente: se i nomi sono già corretti non cambia nulla.
 function migraV2NomiSessioni(schede) {
-  if (localStorage.getItem('sm_migration_v2_nomi')) return schede
   const mappa = { 'Giorno A': 'Push', 'Giorno B': 'Pull', 'Giorno C': 'Legs' }
   let modified = false
   const aggiornate = schede.map((scheda) => ({
@@ -40,7 +21,24 @@ function migraV2NomiSessioni(schede) {
       return sess
     }),
   }))
-  localStorage.setItem('sm_migration_v2_nomi', '1')
+  return modified ? aggiornate : schede
+}
+
+// Corregge le emoji di Push (💪→🏋️) e Pull (🏋️→💪)
+// Idempotente: se le emoji sono già corrette non cambia nulla.
+function migraV3Emoji(schede) {
+  const mappa = { Push: '🏋️', Pull: '💪' }
+  let modified = false
+  const aggiornate = schede.map((scheda) => ({
+    ...scheda,
+    sessioni: scheda.sessioni.map((sess) => {
+      if (mappa[sess.nome] && sess.emoji !== mappa[sess.nome]) {
+        modified = true
+        return { ...sess, emoji: mappa[sess.nome] }
+      }
+      return sess
+    }),
+  }))
   return modified ? aggiornate : schede
 }
 
