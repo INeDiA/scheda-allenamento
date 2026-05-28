@@ -5,6 +5,25 @@ function generaId() {
   return Date.now().toString() + Math.random().toString(36).slice(2)
 }
 
+// Corregge le emoji di Push (💪→🏋️) e Pull (🏋️→💪)
+function migraV3Emoji(schede) {
+  if (localStorage.getItem('sm_migration_v3_emoji')) return schede
+  const mappa = { Push: '🏋️', Pull: '💪' }
+  let modified = false
+  const aggiornate = schede.map((scheda) => ({
+    ...scheda,
+    sessioni: scheda.sessioni.map((sess) => {
+      if (mappa[sess.nome] && sess.emoji !== mappa[sess.nome]) {
+        modified = true
+        return { ...sess, emoji: mappa[sess.nome] }
+      }
+      return sess
+    }),
+  }))
+  localStorage.setItem('sm_migration_v3_emoji', '1')
+  return modified ? aggiornate : schede
+}
+
 // Rinomina sessioni default se hanno ancora i vecchi nomi "Giorno A/B/C"
 function migraV2NomiSessioni(schede) {
   if (localStorage.getItem('sm_migration_v2_nomi')) return schede
@@ -85,12 +104,17 @@ export function useSchedeData() {
   }
 
   // Migrazione nomi sessioni (Giorno A/B/C → Push/Pull/Legs)
-  const schedeDopoMigrazione = migraV2NomiSessioni(schedeEffettive)
-  if (schedeDopoMigrazione !== schedeEffettive) {
-    try {
-      localStorage.setItem('sm_schede', JSON.stringify(schedeDopoMigrazione))
-    } catch { /* ignore */ }
-    schedeEffettive = schedeDopoMigrazione
+  const schedeDopoV2 = migraV2NomiSessioni(schedeEffettive)
+  if (schedeDopoV2 !== schedeEffettive) {
+    try { localStorage.setItem('sm_schede', JSON.stringify(schedeDopoV2)) } catch { /* ignore */ }
+    schedeEffettive = schedeDopoV2
+  }
+
+  // Migrazione emoji (Push 💪→🏋️, Pull 🏋️→💪)
+  const schedeDopoV3 = migraV3Emoji(schedeEffettive)
+  if (schedeDopoV3 !== schedeEffettive) {
+    try { localStorage.setItem('sm_schede', JSON.stringify(schedeDopoV3)) } catch { /* ignore */ }
+    schedeEffettive = schedeDopoV3
   }
 
   const schedaAttiva =

@@ -45,7 +45,7 @@ export const GIORNI_DEFAULT = {
     id: 'A',
     nome: 'Push',
     focus: 'Petto · Tricipiti',
-    emoji: '💪',
+    emoji: '🏋️',
     colore: 'blue',
     esercizi: [
       {
@@ -123,7 +123,7 @@ export const GIORNI_DEFAULT = {
     id: 'B',
     nome: 'Pull',
     focus: 'Dorsali · Bicipiti',
-    emoji: '🏋️',
+    emoji: '💪',
     colore: 'orange',
     esercizi: [
       {
