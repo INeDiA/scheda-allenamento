@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useLocalStorage } from './useStorage'
 import { SCHEDA_DEFAULT, GIORNI_DEFAULT } from '../data/workout'
 
@@ -77,15 +78,38 @@ function migraVecchiDati() {
 }
 
 export function useSchedeData() {
-  const [schede, setSchede] = useLocalStorage('sm_schede', null)
+  // Legge, migra e inizializza lo stato in un'unica passata — prima del primo render.
+  // Scrivere direttamente in localStorage durante il render (fuori dall'initializer)
+  // non aggiorna il React state, causando regressioni ai dati pre-migrazione ad ogni re-render.
+  const [schede, setSchede] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sm_schede')
+      if (!stored) return null
+      let data = JSON.parse(stored)
+      // Applica migrazioni in sequenza
+      data = migraV2NomiSessioni(data)
+      data = migraV3Emoji(data)
+      localStorage.setItem('sm_schede', JSON.stringify(data))
+      return data
+    } catch {
+      return null
+    }
+  })
+
+  // Persiste schede su localStorage ad ogni aggiornamento
+  useEffect(() => {
+    if (schede !== null) {
+      try { localStorage.setItem('sm_schede', JSON.stringify(schede)) } catch {}
+    }
+  }, [schede])
+
   const [schedaAttivaId, setSchedaAttivaId] = useLocalStorage('sm_scheda_attiva_id', null)
 
-  // Inizializzazione / migrazione al primo avvio
+  // Inizializzazione al primo avvio (nessuna scheda in localStorage)
   let schedeEffettive = schede
   let idAttivo = schedaAttivaId
 
   if (!schedeEffettive) {
-    // Prova a migrare dal vecchio formato
     const schedaMigrata = migraVecchiDati()
     if (schedaMigrata) {
       schedeEffettive = [schedaMigrata]
@@ -94,27 +118,10 @@ export function useSchedeData() {
       schedeEffettive = [SCHEDA_DEFAULT]
       idAttivo = SCHEDA_DEFAULT.id
     }
-    // Salva subito (effetto collaterale controllato, solo al primo render)
     try {
       localStorage.setItem('sm_schede', JSON.stringify(schedeEffettive))
       localStorage.setItem('sm_scheda_attiva_id', JSON.stringify(idAttivo))
-    } catch {
-      // ignore
-    }
-  }
-
-  // Migrazione nomi sessioni (Giorno A/B/C → Push/Pull/Legs)
-  const schedeDopoV2 = migraV2NomiSessioni(schedeEffettive)
-  if (schedeDopoV2 !== schedeEffettive) {
-    try { localStorage.setItem('sm_schede', JSON.stringify(schedeDopoV2)) } catch { /* ignore */ }
-    schedeEffettive = schedeDopoV2
-  }
-
-  // Migrazione emoji (Push 💪→🏋️, Pull 🏋️→💪)
-  const schedeDopoV3 = migraV3Emoji(schedeEffettive)
-  if (schedeDopoV3 !== schedeEffettive) {
-    try { localStorage.setItem('sm_schede', JSON.stringify(schedeDopoV3)) } catch { /* ignore */ }
-    schedeEffettive = schedeDopoV3
+    } catch {}
   }
 
   const schedaAttiva =
