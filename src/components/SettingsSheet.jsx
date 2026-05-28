@@ -33,7 +33,7 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
     const blob = new Blob([json], { type: 'application/json' })
     const fileName = `allenamento-backup-${new Date().toISOString().slice(0, 10)}.json`
 
-    // Web Share API (iOS / Android) — tenta prima la condivisione file
+    // Strategia 1: condivisione come file (iOS + Android moderni)
     if (navigator.canShare) {
       const file = new File([blob], fileName, { type: 'application/json' })
       if (navigator.canShare({ files: [file] })) {
@@ -42,13 +42,25 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
           localStorage.setItem('sm_ultimo_backup', new Date().toISOString())
           return
         } catch (err) {
-          if (err?.name === 'AbortError') return  // utente ha annullato
-          // Altro errore (es. Android non supporta .json): cade nel fallback
+          if (err?.name === 'AbortError') return
+          // Altro errore: prova la strategia testo
         }
       }
     }
 
-    // Fallback: download diretto
+    // Strategia 2: condivisione come testo (Android — apre il foglio di condivisione)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Backup allenamento', text: json })
+        localStorage.setItem('sm_ultimo_backup', new Date().toISOString())
+        return
+      } catch (err) {
+        if (err?.name === 'AbortError') return
+        // Ancora errore: cade nel download
+      }
+    }
+
+    // Strategia 3: download diretto (desktop / browser senza Share API)
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
