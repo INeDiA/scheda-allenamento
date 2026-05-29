@@ -1,12 +1,11 @@
 import { useState, useRef } from 'react'
-import { X, ChevronRight, AlertTriangle, Upload, Share2, CloudUpload, CloudDownload, Unlink, RefreshCw } from 'lucide-react'
+import { X, ChevronRight, AlertTriangle, Upload, Share2, CloudUpload, CloudDownload, Unlink, Globe } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { backupNecessario } from '../utils/backup'
-import { useGoogleAuth } from '../hooks/useGoogleAuth'
-import { uploadBackup, downloadBackup } from '../utils/googleDrive'
+import { useBackupProvider } from '../hooks/useBackupProvider'
+import { deserializeBackup } from '../utils/backupData'
 
 const DURATE_TIMER = [60, 90, 120, 150, 180]
-const CHIAVI_BACKUP = ['sm_sessions', 'sm_schede', 'sm_scheda_attiva_id', 'sm_esercizi_custom', 'sm_settings']
 
 export default function SettingsSheet({ settings, onUpdateSettings, onClose, onGestisciSchede }) {
   const { schedaAttiva } = useApp()
@@ -14,54 +13,63 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
   const [erroreImport, setErroreImport] = useState(null)
   const inputFileRef = useRef(null)
 
-  const { tokenData, tokenValido, connetti, scollega } = useGoogleAuth()
-  const [driveLoading, setDriveLoading] = useState(false)
-  const [driveError, setDriveError] = useState(null)
-  const [driveSuccess, setDriveSuccess] = useState(null)
+  const {
+    providerConfig, providerValido,
+    connectGdrive, connectWebdav, disconnect,
+    uploadBackup: providerUpload, downloadBackup: providerDownload,
+  } = useBackupProvider()
 
-  function collegaDrive() {
-    setDriveError(null)
+  const [cloudLoading, setCloudLoading] = useState(false)
+  const [cloudError, setCloudError] = useState(null)
+  const [cloudSuccess, setCloudSuccess] = useState(null)
+
+  // Form WebDAV inline
+  const [showWebdavForm, setShowWebdavForm] = useState(false)
+  const [wdUrl, setWdUrl] = useState('')
+  const [wdUser, setWdUser] = useState('')
+  const [wdPass, setWdPass] = useState('')
+
+  async function handleConnectWebdav(e) {
+    e.preventDefault()
+    setCloudLoading(true); setCloudError(null)
     try {
-      connetti() // naviga verso Google e torna con il token nell'URL hash
-    } catch (e) {
-      setDriveError(e.message)
+      await connectWebdav({ url: wdUrl.trim(), username: wdUser.trim(), password: wdPass })
+      setShowWebdavForm(false)
+    } catch (err) {
+      setCloudError(err.message)
+    } finally {
+      setCloudLoading(false)
     }
   }
 
   async function backupOra() {
-    if (!tokenData) return
-    setDriveLoading(true); setDriveError(null); setDriveSuccess(null)
+    setCloudLoading(true); setCloudError(null); setCloudSuccess(null)
     try {
-      await uploadBackup(tokenData.access_token)
-      setDriveSuccess('Backup completato.')
-    } catch {
-      setDriveError('Backup fallito. Riprova.')
+      await providerUpload()
+      setCloudSuccess('Backup completato.')
+    } catch (err) {
+      setCloudError(err.message || 'Backup fallito. Riprova.')
     } finally {
-      setDriveLoading(false)
+      setCloudLoading(false)
     }
   }
 
-  async function ripristinaDaDrive() {
-    if (!tokenData) return
-    setDriveLoading(true); setDriveError(null); setDriveSuccess(null)
+  async function ripristinaCloud() {
+    setCloudLoading(true); setCloudError(null); setCloudSuccess(null)
     try {
-      const dati = await downloadBackup(tokenData.access_token)
-      if (!dati._version) throw new Error('formato non valido')
-      const CHIAVI = ['sm_sessions', 'sm_schede', 'sm_scheda_attiva_id', 'sm_esercizi_custom', 'sm_settings']
-      for (const k of CHIAVI) {
-        if (dati[k] !== undefined) localStorage.setItem(k, JSON.stringify(dati[k]))
-      }
+      const dati = await providerDownload()
+      deserializeBackup(dati)
       window.location.reload()
-    } catch {
-      setDriveError('Ripristino fallito. Verifica che esista un backup su Drive.')
+    } catch (err) {
+      setCloudError(err.message || 'Ripristino fallito.')
     } finally {
-      setDriveLoading(false)
+      setCloudLoading(false)
     }
   }
 
   const ultimoBackup = localStorage.getItem('sm_ultimo_backup')
   const ultimoBackupStr = ultimoBackup
-    ? new Date(ultimoBackup).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    ? new Date(ultimoBackup).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
     : null
 
   function set(campo, valore) {
@@ -70,13 +78,8 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
 
   // ── Export ──────────────────────────────────────────────────────────
   async function esportaDati() {
-    const dati = { _version: 1, _exportDate: new Date().toISOString() }
-    for (const key of CHIAVI_BACKUP) {
-      const val = localStorage.getItem(key)
-      if (val !== null) dati[key] = JSON.parse(val)
-    }
-
-    const json = JSON.stringify(dati, null, 2)
+    const { serializeBackup } = await import('../utils/backupData')
+    const json = serializeBackup()
     const blob = new Blob([json], { type: 'application/json' })
     const fileName = `allenamento-backup-${new Date().toISOString().slice(0, 10)}.json`
 
@@ -127,12 +130,7 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
     reader.onload = (ev) => {
       try {
         const dati = JSON.parse(ev.target.result)
-        if (!dati._version) throw new Error('formato non valido')
-        for (const key of CHIAVI_BACKUP) {
-          if (dati[key] !== undefined) {
-            localStorage.setItem(key, JSON.stringify(dati[key]))
-          }
-        }
+        deserializeBackup(dati)
         window.location.reload()
       } catch {
         setErroreImport('File non riconosciuto. Assicurati di usare un backup generato da questa app.')
@@ -232,74 +230,109 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
                 {ultimoBackupStr && <p className="text-xs text-gray-600">{ultimoBackupStr}</p>}
               </div>
 
-              {/* Warning backup scaduto — solo se Drive non è attivo */}
-              {backupNecessario() && !(tokenData && tokenValido) && (
-                <button
-                  onClick={esportaDati}
-                  className="w-full flex items-center gap-3 bg-amber-950 border border-amber-800 rounded-xl px-3 py-2.5 text-left active:scale-98 transition-all mb-2"
-                >
+              {/* Warning backup mancante — solo se nessun provider attivo */}
+              {backupNecessario() && !providerValido && (
+                <button onClick={esportaDati}
+                  className="w-full flex items-center gap-3 bg-amber-950 border border-amber-800 rounded-xl px-3 py-2.5 text-left active:scale-98 transition-all mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
                   <p className="text-xs text-amber-300">
-                    {ultimoBackup ? 'Ultimo backup > 30 giorni fa. Tocca per esportare.' : 'Nessun backup. Tocca per esportare.'}
+                    {ultimoBackup ? 'Ultimo backup > 30 giorni. Tocca per esportare.' : 'Nessun backup. Tocca per esportare.'}
                   </p>
                 </button>
               )}
 
-              {/* Drive: token scaduto */}
-              {tokenData && !tokenValido && (
+              {/* Provider: token scaduto (solo gdrive) */}
+              {providerConfig?.type === 'gdrive' && !providerValido && (
                 <div className="flex items-center gap-2 bg-amber-950 border border-amber-800 rounded-xl px-3 py-2 mb-2">
                   <AlertTriangle size={12} className="text-amber-400 flex-shrink-0" />
-                  <p className="text-xs text-amber-300 flex-1">Sessione Drive scaduta</p>
-                  <button onClick={collegaDrive} className="text-xs font-medium text-amber-200 underline">Ricollegati</button>
+                  <p className="text-xs text-amber-300 flex-1">Sessione Google Drive scaduta</p>
+                  <button onClick={connectGdrive} className="text-xs font-medium text-amber-200 underline">Ricollegati</button>
                 </div>
               )}
 
-              {/* Drive: connesso */}
-              {tokenData && tokenValido && (
+              {/* Provider: connesso */}
+              {providerConfig && providerValido && (
                 <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 mb-2">
-                  <p className="text-xs text-white">☁ {tokenData.email}</p>
-                  <button onClick={scollega} className="p-1 text-gray-500 hover:text-red-400 rounded transition-colors">
+                  <p className="text-xs text-white">
+                    {providerConfig.type === 'gdrive' ? `☁ ${providerConfig.email}` : `🌐 ${providerConfig.url}`}
+                  </p>
+                  <button onClick={disconnect} className="p-1 text-gray-500 hover:text-red-400 rounded transition-colors">
                     <Unlink size={13} />
                   </button>
                 </div>
               )}
 
+              {/* Form WebDAV inline */}
+              {showWebdavForm && (
+                <form onSubmit={handleConnectWebdav} className="space-y-2 mb-2">
+                  <input value={wdUrl} onChange={(e) => setWdUrl(e.target.value)} required
+                    placeholder="https://nextcloud.example.com/remote.php/dav/files/user/"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={wdUser} onChange={(e) => setWdUser(e.target.value)} required
+                      placeholder="Utente"
+                      className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+                    <input value={wdPass} onChange={(e) => setWdPass(e.target.value)} required
+                      type="password" placeholder="App password"
+                      className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => { setShowWebdavForm(false); setCloudError(null) }}
+                      className="py-2 rounded-xl text-xs font-medium text-gray-400 bg-gray-800 border border-gray-700 active:scale-98 transition-all">
+                      Annulla
+                    </button>
+                    <button type="submit" disabled={cloudLoading}
+                      className="py-2 rounded-xl text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 active:scale-98 transition-all disabled:opacity-50">
+                      {cloudLoading ? 'Connessione…' : 'Connetti'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
               {/* Pulsanti azioni */}
-              <div className="grid grid-cols-2 gap-2">
-                {tokenData && tokenValido ? (
-                  <>
-                    <button onClick={backupOra} disabled={driveLoading}
-                      className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98 disabled:opacity-50">
-                      <CloudUpload size={13} />{driveLoading ? '…' : 'Backup'}
-                    </button>
-                    <button onClick={ripristinaDaDrive} disabled={driveLoading}
-                      className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98 disabled:opacity-50">
-                      <CloudDownload size={13} />{driveLoading ? '…' : 'Ripristina'}
-                    </button>
-                  </>
-                ) : (
-                  <button onClick={collegaDrive}
-                    className="col-span-2 flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98">
-                    <CloudUpload size={13} />Collega Google Drive
+              {!showWebdavForm && (
+                <div className="grid grid-cols-2 gap-2">
+                  {providerValido ? (
+                    <>
+                      <button onClick={backupOra} disabled={cloudLoading}
+                        className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98 disabled:opacity-50">
+                        <CloudUpload size={13} />{cloudLoading ? '…' : 'Backup'}
+                      </button>
+                      <button onClick={ripristinaCloud} disabled={cloudLoading}
+                        className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98 disabled:opacity-50">
+                        <CloudDownload size={13} />{cloudLoading ? '…' : 'Ripristina'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={connectGdrive}
+                        className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98">
+                        <CloudUpload size={13} />Google Drive
+                      </button>
+                      <button onClick={() => { setShowWebdavForm(true); setCloudError(null) }}
+                        className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98">
+                        <Globe size={13} />WebDAV
+                      </button>
+                    </>
+                  )}
+                  <button onClick={esportaDati}
+                    className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98">
+                    <Share2 size={13} />Esporta
                   </button>
-                )}
-                <button onClick={esportaDati}
-                  className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98">
-                  <Share2 size={13} />Esporta
-                </button>
-                <button onClick={() => inputFileRef.current?.click()}
-                  className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98">
-                  <Upload size={13} />Importa
-                </button>
-              </div>
+                  <button onClick={() => inputFileRef.current?.click()}
+                    className="flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl py-2.5 text-xs font-medium text-white transition-colors active:scale-98">
+                    <Upload size={13} />Importa
+                  </button>
+                </div>
+              )}
 
               <input ref={inputFileRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileImport} />
 
-              {driveSuccess && <p className="text-xs text-green-400 mt-2">{driveSuccess}</p>}
-              {(driveError || erroreImport) && (
+              {cloudSuccess && <p className="text-xs text-green-400 mt-2">{cloudSuccess}</p>}
+              {(cloudError || erroreImport) && (
                 <div className="flex items-start gap-2 bg-red-950 border border-red-800 rounded-xl p-3 mt-2">
                   <AlertTriangle size={13} className="text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-300">{driveError || erroreImport}</p>
+                  <p className="text-xs text-red-300">{cloudError || erroreImport}</p>
                 </div>
               )}
             </div>
