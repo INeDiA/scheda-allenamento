@@ -19,16 +19,9 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
   const [driveError, setDriveError] = useState(null)
   const [driveSuccess, setDriveSuccess] = useState(null)
 
-  async function collegaDrive() {
+  function collegaDrive() {
     setDriveError(null)
-    try {
-      setDriveLoading(true)
-      await connetti()
-    } catch (e) {
-      if (e?.error !== 'access_denied') setDriveError('Connessione annullata o non riuscita.')
-    } finally {
-      setDriveLoading(false)
-    }
+    connetti() // naviga verso Google e torna con il token nell'URL hash
   }
 
   async function backupOra() {
@@ -240,7 +233,7 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
                   className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-2xl py-3 text-sm font-medium text-white transition-colors active:scale-98 disabled:opacity-50"
                 >
                   <CloudUpload size={15} />
-                  {driveLoading ? 'Connessione…' : 'Collega Google Drive'}
+                  Collega Google Drive
                 </button>
               )}
 
@@ -257,7 +250,7 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
                     className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-2xl py-3 text-sm font-medium text-white transition-colors active:scale-98 disabled:opacity-50"
                   >
                     <RefreshCw size={14} />
-                    {driveLoading ? 'Connessione…' : 'Ricollegati a Google Drive'}
+                    Ricollegati a Google Drive
                   </button>
                 </div>
               )}
