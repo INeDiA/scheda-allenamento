@@ -53,8 +53,9 @@ export function useGoogleAuth() {
 
   // Avvia il flusso OAuth con redirect (funziona su tutti i browser/PWA, nessun popup)
   function connetti() {
+    // Il client ID OAuth per web app è pubblico per design (appare in ogni URL di login)
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-    if (!clientId) throw new Error('VITE_GOOGLE_CLIENT_ID non configurato')
+      || '218821816699-othhqj9dngod4imr2qkiichno2jfn1v1.apps.googleusercontent.com'
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: getRedirectUri(),
