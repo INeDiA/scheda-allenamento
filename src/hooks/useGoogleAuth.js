@@ -53,8 +53,10 @@ export function useGoogleAuth() {
 
   // Avvia il flusso OAuth con redirect (funziona su tutti i browser/PWA, nessun popup)
   function connetti() {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    if (!clientId) throw new Error('VITE_GOOGLE_CLIENT_ID non configurato')
     const params = new URLSearchParams({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      client_id: clientId,
       redirect_uri: getRedirectUri(),
       response_type: 'token',
       scope: SCOPE,

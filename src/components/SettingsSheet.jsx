@@ -21,7 +21,11 @@ export default function SettingsSheet({ settings, onUpdateSettings, onClose, onG
 
   function collegaDrive() {
     setDriveError(null)
-    connetti() // naviga verso Google e torna con il token nell'URL hash
+    try {
+      connetti() // naviga verso Google e torna con il token nell'URL hash
+    } catch (e) {
+      setDriveError(e.message)
+    }
   }
 
   async function backupOra() {
